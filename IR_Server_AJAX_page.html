@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<style>
+table,th,td {
+  border : 1px solid black;
+  border-collapse: collapse;
+}
+th,td {
+  padding: 5px;
+}
+</style>
+<body>
+
+<h2>The XMLHttpRequest Object</h2>
+<!-- add attributes for :
+Power: Off,
+Mode: 4 (Heat)
+Temp: 25C
+Fan: 3 (High)
+Sleep: Off, 
+Swing(V) Mode: Manual,
+Swing(V): 0 (Last),
+Timer: Off
+
+//Mesg Desc.: Model: 1 (YAW1F), Power: Off, Mode: 4 (Heat), Temp: 25C, Fan: 3 (High), Turbo: Off, IFeel: Off, WiFi: Off, XFan: Off, Light: On, Sleep: Off, Swing(V) Mode: Manual, Swing(V): 0 (Last), Timer: Off
+
+-->
+<button type="button" onclick="loadDoc('0x3C09605000200010')">ON</button>
+<button type="button" onclick="loadDoc('0x3409605000200090')">OFF</button>
+<button type="button" onclick="loadDoc('0x3409605000200090')">temp</button>
+ kGreeAuto, kGreeDry, kGreeCool, kGreeFan, kGreeHeat
+<br>  
+  <input type="radio" name="mode" value="auto">
+  <label for="auto">Auto</label><br>
+  <input type="radio" name="mode" value="heat">
+  <label for="heat">Heat</label><br>
+  <input type="radio" name="mode" value="cool">
+  <label for="cool">Cool</label><br>
+  <input type="radio" name="mode" value="fan">
+  <label for="fan">Fan</label><br>
+  <input type="radio" name="mode" value="dry">
+  <label for="dry">Dry</label><br>
+  
+  
+<label for="quantity">Temperature:</label>
+<input type="number" id="quantity" name="quantity" min="16" max="30">
+
+<div id="status_div">?</div>
+<div id="code_div">?</div>
+<br><br>
+<table id="demo"></table>
+
+<input type="button"> <br>
+<input type="checkbox"><br>
+<input type="color"><br>
+<input type="date"><br>
+<input type="datetime-local"><br>
+<input type="email"><br>
+<input type="file"><br>
+<input type="hidden"><br>
+<input type="image"><br>
+<input type="month"><br>
+
+<input type="password"><br>
+<input type="radio"><br>
+<input type="range"><br>
+<input type="reset"><br>
+<input type="search"><br>
+<input type="submit"><br>
+<input type="tel"><br>
+<input type="text"><br>
+<input type="time"><br>
+<input type="url"><br>
+<input type="week"><br>
+
+<script>
+function loadDoc(code) {
+  var xhttp = new XMLHttpRequest();
+  xhttp.onreadystatechange = function() {
+    if (this.readyState == 4 && this.status == 200) {
+      myFunction(this);
+    }
+  };
+  var espAddress="http://192.168.1.232/ir?code=" + code;
+  //var espAddress="http://127.0.0.1:8080/AJAX_demo.xml";
+  xhttp.open("GET", espAddress, true);
+  xhttp.send();
+}
+function myFunction(xml) {
+  
+  var xmlDoc = xml.responseXML;
+  var x = xmlDoc.getElementsByTagName("RESPONE")[0];
+  document.getElementById("status_div").innerHTML = x.getElementsByTagName("STATUS")[0].childNodes[0].nodeValue;
+  document.getElementById("code_div").innerHTML = x.getElementsByTagName("CODE")[0].childNodes[0].nodeValue;
+}
+</script>
+
+</body>
+</html>
