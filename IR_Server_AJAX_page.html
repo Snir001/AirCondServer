@@ -27,12 +27,10 @@ Timer: Off
 -->
 <button type="button" onclick="loadDoc('0x3C09605000200010')">ON</button>
 <button type="button" onclick="loadDoc('0x3409605000200090')">OFF</button>
-<button type="button" onclick="loadDoc('0x3409605000200090')">temp</button>
- kGreeAuto, kGreeDry, kGreeCool, kGreeFan, kGreeHeat
-<br>  
-  <input type="radio" name="mode" value="auto">
+<br>
+  <input type="radio"  name="mode" value="auto">
   <label for="auto">Auto</label><br>
-  <input type="radio" name="mode" value="heat">
+  <input type="radio" id="heat_radio" name="mode" value="heat">
   <label for="heat">Heat</label><br>
   <input type="radio" name="mode" value="cool">
   <label for="cool">Cool</label><br>
@@ -40,16 +38,19 @@ Timer: Off
   <label for="fan">Fan</label><br>
   <input type="radio" name="mode" value="dry">
   <label for="dry">Dry</label><br>
+<br>  
   
-  
-<label for="quantity">Temperature:</label>
-<input type="number" id="quantity" name="quantity" min="16" max="30">
+<label for="temperature">Temperature:</label>
+<input type="number" id="tempId" name="temp" min="16" max="30">
 
+<button type="button" onclick="sendIr()">set</button>
+
+<!--move status part to the right -->
 <div id="status_div">?</div>
 <div id="code_div">?</div>
 <br><br>
 <table id="demo"></table>
-
+<!--
 <input type="button"> <br>
 <input type="checkbox"><br>
 <input type="color"><br>
@@ -72,8 +73,51 @@ Timer: Off
 <input type="time"><br>
 <input type="url"><br>
 <input type="week"><br>
-
+-->
 <script>
+// TODO: get status from esp to:
+//      1. fill last settings
+//      2. see if online.
+document.querySelector('input[name="temp"]').value=26;
+document.getElementById("heat_radio").checked="checked";
+
+
+
+function sendIr() {
+// build GET address:
+//var temp= 
+var mode= document.querySelector('input[name="mode"]:checked').value;
+var temp=document.querySelector('input[name="temp"]').value;
+var nodeRequest="http://192.168.1.232/ir2?temp=" + temp + "&mode="+mode;
+console.log(nodeRequest);
+sendAjax(nodeRequest,myFunction)
+
+}
+
+
+
+
+function sendAjax(address, func ) {
+  var xhttp = new XMLHttpRequest();
+  xhttp.onreadystatechange = function() {
+    if (this.readyState == 4 && this.status == 200) {
+      func(this)
+    }
+  };
+  //var espAddress="http://127.0.0.1:8080/AJAX_demo.xml";
+  xhttp.open("GET", address, true);
+  xhttp.send();
+}
+
+function myFunction(xml) {
+  
+  var xmlDoc = xml.responseXML;
+  var x = xmlDoc.getElementsByTagName("RESPONE")[0];
+  document.getElementById("status_div").innerHTML = x.getElementsByTagName("STATUS")[0].childNodes[0].nodeValue;
+  document.getElementById("code_div").innerHTML = x.getElementsByTagName("CODE")[0].childNodes[0].nodeValue;
+}
+
+
 function loadDoc(code) {
   var xhttp = new XMLHttpRequest();
   xhttp.onreadystatechange = function() {
@@ -82,16 +126,10 @@ function loadDoc(code) {
     }
   };
   var espAddress="http://192.168.1.232/ir?code=" + code;
+  console.log(espAddress)
   //var espAddress="http://127.0.0.1:8080/AJAX_demo.xml";
   xhttp.open("GET", espAddress, true);
   xhttp.send();
-}
-function myFunction(xml) {
-  
-  var xmlDoc = xml.responseXML;
-  var x = xmlDoc.getElementsByTagName("RESPONE")[0];
-  document.getElementById("status_div").innerHTML = x.getElementsByTagName("STATUS")[0].childNodes[0].nodeValue;
-  document.getElementById("code_div").innerHTML = x.getElementsByTagName("CODE")[0].childNodes[0].nodeValue;
 }
 </script>
 

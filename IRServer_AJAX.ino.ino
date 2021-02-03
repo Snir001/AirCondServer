@@ -1,33 +1,4 @@
-/*
- * IRremoteESP8266: IRServer - demonstrates sending IR codes controlled from a webserver
- * Version 0.3 May, 2019
- * Version 0.2 June, 2017
- * Copyright 2015 Mark Szabo
- * Copyright 2019 David Conran
- *
- * An IR LED circuit *MUST* be connected to the ESP on a pin
- * as specified by kIrLed below.
- *
- * TL;DR: The IR LED needs to be driven by a transistor for a good result.
- *
- * Suggested circuit:
- *     https://github.com/crankyoldgit/IRremoteESP8266/wiki#ir-sending
- *
- * Common mistakes & tips:
- *   * Don't just connect the IR LED directly to the pin, it won't
- *     have enough current to drive the IR LED effectively.
- *   * Make sure you have the IR LED polarity correct.
- *     See: https://learn.sparkfun.com/tutorials/polarity/diode-and-led-polarity
- *   * Typical digital camera/phones can be used to see if the IR LED is flashed.
- *     Replace the IR LED with a normal LED if you don't have a digital camera
- *     when debugging.
- *   * Avoid using the following pins unless you really know what you are doing:
- *     * Pin 0/D3: Can interfere with the boot/program mode & support circuits.
- *     * Pin 1/TX/TXD0: Any serial transmissions from the ESP8266 will interfere.
- *     * Pin 3/RX/RXD0: Any serial transmissions to the ESP8266 will interfere.
- *   * ESP-01 modules are tricky. We suggest you use a module with more GPIOs
- *     for your first time. e.g. ESP-12 etc.
- */
+
 #include <Arduino.h>
 #if defined(ESP8266)
 #include <ESP8266WiFi.h>
@@ -69,23 +40,24 @@ IRsend irsend(kIrLed);  // Set the GPIO to be used to sending the message.
 void handleRoot() {
   server.send(200, "text/html",
               "<html>" \
-                "<head><title>" HOSTNAME " Demo</title></head>" \
-                "<body>" \
-                  "<h1>Hello from " HOSTNAME ", you can send NEC encoded IR" \
-                      "signals from here!</h1>" \
-                  "<p><a href=\"ir?code=0x3C09605000200010\">Send HEAT ON</a></p>" \
-                  "<p><a href=\"ir?code=0x3409605000200090\">Send HEAT OFF</a></p>" \
-                  "<p><a href=\"ir?code=16771222\">Send 0xFFE896</a></p>" \
-                "</body>" \
+              "<head><title>" HOSTNAME " Demo</title></head>" \
+              "<body>" \
+              "<h1>Hello from " HOSTNAME ", you can send NEC encoded IR" \
+              "signals from here!</h1>" \
+              "<p><a href=\"ir?code=0x3C09605000200010\">Send HEAT ON</a></p>" \
+              "<p><a href=\"ir?code=0x3409605000200090\">Send HEAT OFF</a></p>" \
+              "<p><a href=\"ir?code=16771222\">Send 0xFFE896</a></p>" \
+              "</body>" \
               "</html>");
 }
 
 void handleRoot2(uint64_t code) {
-  String respone= "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<RESPONE>\n<STATUS>Good</STATUS>\n<CODE>";
-  respone+=uint64ToString(code);
-  respone+="</CODE>\n</RESPONE>\n";
+  //TODO: need to change format to json
+  String respone = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<RESPONE>\n<STATUS>Good</STATUS>\n<CODE>";
+  respone += uint64ToString(code);
+  respone += "</CODE>\n</RESPONE>\n";
   server.sendHeader("Access-Control-Allow-Origin", "*");
-  server.send(200, "text/xml",respone);
+  server.send(200, "text/xml", respone);
   printState();
 }
 
@@ -97,11 +69,36 @@ void handleIr() {
       code = strtoull(server.arg(i).c_str(), NULL, 0);
       Serial.print("after convertion");
       Serial.println(uint64ToString(code));
-//    irsend.sendGree(code);
-      ac.send();
+      irsend.sendGree(code);
+      //      ac.send();
     }
   }
   handleRoot2(code);
+  //handleRoot();
+}
+
+void handleIr2() {
+  uint64_t code;
+  for (uint8_t i = 0; i < server.args(); i++) {
+    if (server.argName(i) == "temp") {
+      ac.setTemp(atoi(server.arg(i).c_str()));
+      Serial.println("Temp:" + server.arg(i));
+    }
+    if (server.argName(i) == "mode") {
+      // kGreeAuto, kGreeDry, kGreeCool, kGreeFan, kGreeHeat
+      String mode_str = server.arg(i).c_str();
+      //TODO: auto mode dont work. need to verify with the remote.
+      if (mode_str == "auto")  ac.setMode(kGreeAuto); 
+      if (mode_str == "heat")  ac.setMode(kGreeHeat);
+      if (mode_str == "cool") ac.setMode(kGreeCool);
+      if (mode_str == "fan") ac.setMode(kGreeFan);
+      if (mode_str == "dry") ac.setMode(kGreeDry);
+      Serial.println("Mode:" + server.arg(i));
+    }
+    
+  }
+  ac.send();
+  handleRoot2(0x1234567890200010);
   //handleRoot();
 }
 
@@ -110,7 +107,7 @@ void handleNotFound() {
   message += "URI: ";
   message += server.uri();
   message += "\nMethod: ";
-  message += (server.method() == HTTP_GET)?"GET":"POST";
+  message += (server.method() == HTTP_GET) ? "GET" : "POST";
   message += "\nArguments: ";
   message += server.args();
   message += "\n";
@@ -144,11 +141,11 @@ void setup(void) {
   irsend.begin();
   ac.begin();
   Serial.begin(115200);
-  
+
   // Configures static IP address
-if (!WiFi.config(local_IP, gateway, subnet, primaryDNS)) {
-  Serial.println("STA Failed to configure");
-}
+  if (!WiFi.config(local_IP, gateway, subnet, primaryDNS)) {
+    Serial.println("STA Failed to configure");
+  }
   WiFi.begin(kSsid, kPassword);
   Serial.println("");
 
@@ -163,7 +160,7 @@ if (!WiFi.config(local_IP, gateway, subnet, primaryDNS)) {
   Serial.print("IP address: ");
   Serial.println(WiFi.localIP().toString());
   ac.on();
-//  ac.off();
+  //  ac.off();
   ac.setFan(1);
   // kGreeAuto, kGreeDry, kGreeCool, kGreeFan, kGreeHeat
   ac.setMode(kGreeHeat);
@@ -185,8 +182,9 @@ if (!WiFi.config(local_IP, gateway, subnet, primaryDNS)) {
 
   server.on("/", handleRoot);
   server.on("/ir", handleIr);
+  server.on("/ir2", handleIr2);
 
-  server.on("/inline", [](){
+  server.on("/inline", []() {
     server.send(200, "text/plain", "this works as well");
   });
 
